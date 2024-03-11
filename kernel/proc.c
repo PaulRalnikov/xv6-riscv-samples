@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "procinfo.h"
 
 struct cpu cpus[NCPU];
 
@@ -12,7 +13,7 @@ struct proc proc[NPROC];
 
 struct proc *initproc;
 
-int nextpid = 1;
+int nxtpid = 1;
 struct spinlock pid_lock;
 
 extern void forkret(void);
@@ -49,7 +50,7 @@ procinit(void)
 {
   struct proc *p;
   
-  initlock(&pid_lock, "nextpid");
+  initlock(&pid_lock, "nxtpid");
   initlock(&wait_lock, "wait_lock");
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
@@ -95,8 +96,8 @@ allocpid()
   int pid;
   
   acquire(&pid_lock);
-  pid = nextpid;
-  nextpid = nextpid + 1;
+  pid = nxtpid;
+  nxtpid = nxtpid + 1;
   release(&pid_lock);
 
   return pid;
@@ -680,4 +681,70 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+//returns >=0 on success
+//returns -1 if limit is lim is not enought
+//returns -2 in other error cases
+int sys_ps_listinfo(void) {
+  struct procinfo *plist = 0;
+  int lim = 0;
+
+  uint64 addr_plist;
+
+  argaddr(0, &addr_plist);
+  plist = (struct procinfo *) addr_plist;
+  argint(1, &lim);
+
+  struct proc *p;
+  int cnt_written = 0;
+
+  struct procinfo pinfo;
+
+  for(p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if(p->state == UNUSED) {
+      release(&p->lock);
+      continue;
+    }
+    // printf("proc number %d\n", cnt_written);
+
+    if (plist == 0) {
+      cnt_written++;
+      release(&p->lock);
+      continue;
+    }
+
+    acquire(&wait_lock);
+    if (p->parent == 0)
+      pinfo.parent_pid = -1;
+    else
+      pinfo.parent_pid = p->parent->pid;
+    release(&wait_lock);
+
+    pinfo.state = p->state;
+
+    safestrcpy(pinfo.proc_name, p->name, sizeof(pinfo.proc_name));
+
+    if (cnt_written >= lim) {
+      //given limit is not enought
+      release(&p->lock);
+      return -1;
+    }
+
+    pagetable_t pagetable = myproc()->pagetable;
+
+    if (copyout(pagetable, (uint64)(&plist[cnt_written]), (char*)(&pinfo), sizeof(pinfo)) != 0) {
+      printf("cant write proc number %d\n", cnt_written);
+      release(&p->lock);
+      return -2;
+    }
+
+    // printf("successfully write process number %d\n", cnt_written);
+
+    release(&p->lock);
+    cnt_written++;
+
+  }
+  return cnt_written;
 }
