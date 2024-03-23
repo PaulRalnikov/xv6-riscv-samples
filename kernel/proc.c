@@ -277,6 +277,22 @@ growproc(int n)
   return 0;
 }
 
+//adds mutex with descriptor desc to current proc
+//returns 0 on success, -1 on error
+int addmtx(int desc) {
+  struct proc* p = myproc();
+  acquire(&p->lock);
+  for (int i = 0; i < NOMUTEX; i++) {
+    if (p->alloc_mtx[i] == -1) {
+      p->alloc_mtx[i] = desc;
+      release(&p->lock);
+      return 0;
+    }
+  }
+  release(&p->lock);
+  return -1;
+}
+
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
 int
@@ -301,6 +317,7 @@ fork(void)
 
   //"Use" mutexes allocated by parent
   for (int i = 0; i < NOMUTEX; i++) {
+    np->alloc_mtx[i] = p->alloc_mtx[i];
     if (p->alloc_mtx[i] == -1) continue;
     if (usemutex(p->alloc_mtx[i]) < 0)
       panic("can not use mutex in child");
@@ -372,7 +389,7 @@ exit(int status)
 
   //free all mutexes
   for (int i = 0; i < NOMUTEX; i++) {
-    if (p->alloc_mtx[i] != -1) {
+    if (p->alloc_mtx[i] != -1) { 
       int ret = freemutex(p->alloc_mtx[i]);
       if (ret < 0) {
         panic("can not free mutex");

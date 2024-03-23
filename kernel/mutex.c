@@ -27,13 +27,13 @@ mutexinit(void)
 int
 allocmutex(void) {
   for (int i = 0; i < NMUTEX; i++) {
-    acquire(&mtx[i].protect_lock);
+    acquire(&(mtx[i].protect_lock));
     if (mtx[i].cnt_procs == 0) {
       mtx[i].cnt_procs++;
-      acquire(&mtx[i].protect_lock);
+      release(&mtx[i].protect_lock);
       return i;
     }
-    acquire(&mtx[i].protect_lock);
+    release(&mtx[i].protect_lock);
   }
   return -1;
 }
