@@ -43,10 +43,8 @@ int
 acquiremutex(int desc)
 {
   if (desc < 0 || desc >= NMUTEX) return -1;
-  
-  acquire(&mtx[desc].protect_lock);
   acquiresleep(&mtx[desc].func_lock);
-  release(&mtx[desc].protect_lock);
+  
   return 0;
 }
 
@@ -55,9 +53,7 @@ int releasemutex(int desc)
 {
   if (desc < 0 || desc >= NMUTEX) return -1;
   
-  acquire(&mtx[desc].protect_lock);
   releasesleep(&mtx[desc].func_lock);
-  release(&mtx[desc].protect_lock);
   return 0;
 }
 
