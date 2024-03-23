@@ -104,4 +104,5 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int alloc_mtx[NOMUTEX];           // table of descriptors of allocated mutexes (alloc_mtx[i] = -1 inidactes no mutex)
 };

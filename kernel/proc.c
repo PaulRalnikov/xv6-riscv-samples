@@ -55,6 +55,9 @@ procinit(void)
       initlock(&p->lock, "proc");
       p->state = UNUSED;
       p->kstack = KSTACK((int) (p - proc));
+      for (int i = 0; i < NOMUTEX; i++) {
+        p->alloc_mtx[i] = -1;
+      }
   }
 }
 
@@ -296,6 +299,13 @@ fork(void)
   }
   np->sz = p->sz;
 
+  //"Use" mutexes allocated by parent
+  for (int i = 0; i < NOMUTEX; i++) {
+    if (p->alloc_mtx[i] == -1) continue;
+    if (usemutex(p->alloc_mtx[i]) < 0)
+      panic("can not use mutex in child");
+  }
+
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 
@@ -357,6 +367,16 @@ exit(int status)
       struct file *f = p->ofile[fd];
       fileclose(f);
       p->ofile[fd] = 0;
+    }
+  }
+
+  //free all mutexes
+  for (int i = 0; i < NOMUTEX; i++) {
+    if (p->alloc_mtx[i] != -1) {
+      int ret = freemutex(p->alloc_mtx[i]);
+      if (ret < 0) {
+        panic("can not free mutex");
+      }
     }
   }
 
