@@ -6,17 +6,24 @@ int main(int argc, char *argv[]) {
     printf("Not enought number of args; expected at least one\n");
     exit(1);
   }
-  int desc = allocmtx();
-  if (desc < 0) {
-    printf("Can not alloc mutex\n");
-    exit(1);
-  }
   int p_fwd[2];
   int p_bwd[2];
   if (pipe(p_fwd) != 0 || pipe(p_bwd) != 0) {
     printf("pipe error\n");
     exit(1);
   }
+  int desc = allocmtx();
+  if (desc < 0) {
+    printf("Can not alloc mutex\n");
+    if (close(p_fwd[0]) != 0 ||
+    		close(p_fwd[1]) != 0 ||
+    		close(p_bwd[0]) != 0 ||
+    		close(p_bwd[1]) != 0) {
+    	printf("Can not close pipes\n");
+    }
+    exit(1);
+  }
+  
   int pid = fork();
   if (pid > 0) {
 

@@ -83,9 +83,14 @@ int holdingmutex(int desc) {
 int
 freemutex(int desc) {
   int holds = holdingmutex(desc);
-  if (holds < 0 || (holds == 1 && releasemutex(desc) < 0)) return -2;
+  if (holds < 0 || (holds == 1 && releasemutex(desc) < 0))
+  	return -1;
 
   acquire(&mtx[desc].protect_lock);
+  if (mtx[desc].cnt_procs == 0) {
+  	release(&mtx[desc].protect_lock);
+  	return -2;
+  }
   mtx[desc].cnt_procs--;    
   release(&mtx[desc].protect_lock);
   return 0;
