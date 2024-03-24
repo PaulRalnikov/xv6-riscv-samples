@@ -8,6 +8,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+struct mutex;
 
 // bio.c
 void            binit(void);
@@ -70,6 +71,16 @@ void            log_write(struct buf*);
 void            begin_op(void);
 void            end_op(void);
 
+// mutex.c
+
+void           mutexinit(void);
+int            allocmutex(void);
+int            acquiremutex(int desc);
+int            releasemutex(int desc);
+int            usemutex(int desc);
+int            holdingmutex(int desc);
+int            freemutex(int desc);
+
 // pipe.c
 int             pipealloc(struct file**, struct file**);
 void            pipeclose(struct pipe*, int);
@@ -106,6 +117,7 @@ void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
+int             addmtx(int desc);
 
 // swtch.S
 void            swtch(struct context*, struct context*);

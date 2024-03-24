@@ -22,6 +22,10 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int allocmtx(void);
+int acquiremtx(int desc);
+int releasemtx(int desc);
+int freemtx(int desc);
 
 // ulib.c
 int stat(const char*, struct stat*);
