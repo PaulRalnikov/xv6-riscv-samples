@@ -32,21 +32,11 @@ int main(int argc, char *argv[]) {
   		exit(1);
   	}
 
-    if (acquiremtx(desc) != 0) {
-  		printf("error on acquire mutex in parent process\n");
-  		if (close(p_fwd[1]) != 0 || close(p_bwd[0]) != 0)
-	      printf("error: parent process can not close pipes\n");
-	    exit(1);
-  	}
-
     int len = strlen(argv[1]);
     int written = write(p_fwd[1], argv[1], len);
 
     if (written != len) {
 	    printf("error while writing argv[1]; written %d, but expected %d", written, len);
-
-	    if (releasemtx(desc) != 0)
-  			printf("error on release mutex in parent process\n");
 
 	    if (close(p_fwd[1]) != 0 || close(p_bwd[0]) != 0)
 	      printf("error: parent process can not close pipes\n");
@@ -59,38 +49,25 @@ int main(int argc, char *argv[]) {
 	  	exit(1);
 	  }
 
-	  if (releasemtx(desc) != 0) {
-	  	printf("error on release mutex in parent process\n");
-  		if (close(p_bwd[0]) != 0)
-	      printf("error: parent process can not close input part of backward pipe\n");
-	    exit(1);
-	  }
-
     int my_pid = getpid();
     int cc;
     char c;
 
     for(;;) {
-    	if (acquiremtx(desc) != 0) {
+
+      cc = read(p_bwd[0], &c, 1);
+
+      if (cc < 1)
+      	break;
+
+      if (acquiremtx(desc) != 0) {
     		printf("error on acquire mutex in parent process\n");
     		if (close(p_bwd[0]) != 0)
 		      printf("error: parent process can not close input part of backward pipe\n");
 		    exit(1);
     	}
 
-      cc = read(p_bwd[0], &c, 1);
-
-      if (cc < 1) {
-      	if (releasemtx(desc) != 0) {
-	    		printf("error on release mutex in parent process\n");
-	    		if (close(p_bwd[0]) != 0)
-			      printf("error: parent process can not close input part of backward pipe\n");
-			    exit(1);
-	    	}
-      	break;
-      }
-
-      printf("%d received:%c\n", my_pid, c);
+      printf("%d received \'%c\'\n", my_pid, c);
 
       if (releasemtx(desc) != 0) {
     		printf("error on release mutex in parent process\n");
@@ -116,42 +93,35 @@ int main(int argc, char *argv[]) {
   	int cc;
   	int my_pid = getpid();
     for(;;) {
-    	if (acquiremtx(desc) != 0) {
+
+      cc = read(p_fwd[0], &c, 1);
+
+      if (cc < 1)
+      	break;
+
+      if (acquiremtx(desc) != 0) {
     		printf("error on acquire mutex in child process\n");
     		if (close(p_fwd[0]) != 0 || close(p_bwd[1]) != 0)
 		      printf("error: child process can not close pipes\n");
 		    exit(1);
     	}
 
-      cc = read(p_fwd[0], &c, 1);
+    	printf("%d received \'%c\'\n", my_pid, c);
 
-      if (cc < 1) {
-      	if (releasemtx(desc) != 0) {
-	    		printf("error on release mutex in child process\n");
-	    		if (close(p_fwd[0]) != 0 || close(p_bwd[1]) != 0)
-		      	printf("error: child process can not close pipes\n");
-	    		exit(1);
-	    	}
-      	break;
-      }
-
-      printf("%d received:%c\n", my_pid, c);
-
-      if (write(p_bwd[1], &c, 1) != 1) {
-      	printf("error on write in child process\n");
-      	if (releasemtx(desc) != 0)
-      		printf("error: child process can not release mutex\n");
-      	if (close(p_fwd[0]) != 0 || close(p_bwd[1]) != 0)
-      		printf("error: child process cat not close pipes\n");
-      	exit(1);
-      }
-
-      if (releasemtx(desc) != 0) {
+    	if (releasemtx(desc) != 0) {
     		printf("error on release mutex in child process\n");
     		if (close(p_fwd[0]) != 0 || close(p_bwd[1]) != 0)
 		      printf("error: child process can not close pipes\n");
 		    exit(1);
     	}
+
+      if (write(p_bwd[1], &c, 1) != 1) {
+      	printf("error on write in child process\n");
+      	if (close(p_fwd[0]) != 0 || close(p_bwd[1]) != 0)
+      		printf("error: child process cat not close pipes\n");
+      	exit(1);
+      }
+      
     }
     if (close(p_fwd[0]) != 0 || close(p_bwd[1]) != 0) {
 		  printf("error: child process can not close pipes\n");

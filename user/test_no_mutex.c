@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
       if (cc < 1)
       	break;
 
-      printf("%d parent received:%c\n", my_pid, c);
+      printf("%d received \'%c\'\n", my_pid, c);
     }
 
     if (close(p_bwd[0]) != 0) {
@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
       if (cc < 1)
       	break;
 
-      printf("%d child received:%c\n", my_pid, c);
+      printf("%d received \'%c\'\n", my_pid, c);
 
       if (write(p_bwd[1], &c, 1) != 1) {
       	printf("error: child process can not write symbol\n");
