@@ -14,19 +14,13 @@ int buf_end;
 struct spinlock msg_buf_lock;
 
 int add_buf(int i) {
-	return (i == BUFMSGSZ ? 0 : i + 1);
+	return (i == BUFMSGSZ - 1 ? 0 : i + 1);
 }
 
 void initmsgbuf() {
 	buf_start = 0;
 	msg_buf[0] = '\n';
 	buf_end = 1;
-	// msg_buf[0] = '\n';
-	// msg_buf[1] = 'a';
-	// msg_buf[2] = 'b';
-	// msg_buf[3] = 'c';
-	// msg_buf[4] = '\n';
-	// buf_end = 5;
 	initlock(&msg_buf_lock, "message buffer lock");
 }
 
@@ -146,10 +140,9 @@ uint64 sys_dmesg(void) {
 	while (msg_buf[i] != '\n') i = add_buf(i);
 	buf_start = i;
 	i = add_buf(i);
-
 	char zero = 0;
 	int j = 0;
-	int to_end_sz = (i < buf_end ? BUFMSGSZ - i : buf_end - i);
+	int to_end_sz = (i < buf_end ? buf_end - i : BUFMSGSZ - i);
 	pagetable_t pagetable = myproc()->pagetable;
 
 	if (sz - 1 <= to_end_sz) {

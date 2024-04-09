@@ -7,8 +7,10 @@ int main(int argc, const char* argv[]) {
 
 	char* buf = malloc(sizeof(char) * BUF_SIZE);
 
-	if (dmesg(buf, BUF_SIZE) != 0) {
-		printf("error in dmesg\n");
+	int ret = dmesg(buf, BUF_SIZE);
+
+	if (ret != 0) {
+		printf("error: dmesg returned %d\n", ret);
 		free(buf);
 		exit(0);
 	}
