@@ -180,6 +180,11 @@ uartintr(void)
     int c = uartgetc();
     if(c == -1)
       break;
+    if (log_devintr) {
+      pr_msg(
+        "interrupt number %d caused by UART; pressed symbol number %d",
+        UART0_IRQ, c);
+    }
     consoleintr(c);
   }
 

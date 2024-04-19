@@ -22,6 +22,16 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int dmesg(char*, int);
+int start_syslog(void);
+int stop_syslog(void);
+int start_devintrlog(void);
+int stop_devintrlog(void);
+int start_execlog(void);
+int stop_execlog(void);
+int start_swtchlog(void);
+int stop_swtchlog(void);
+int clearmsgbuf(void);
 
 // ulib.c
 int stat(const char*, struct stat*);
