@@ -446,184 +446,8 @@ uint64 sys_stop_swtchlog(void) {
   return 0;
 }
 
-// Per-CPU process scheduler.
-// Each CPU calls scheduler() after setting itself up.
-// Scheduler never returns.  It loops, doing:
-//  - choose a process to run.
-//  - swtch to start running that process.
-//  - eventually that process transfers control
-//    via swtch back to the scheduler.
-void
-scheduler(void)
-{
-  struct proc *p;
-  struct cpu *c = mycpu();
-  
-  c->proc = 0;
-  for(;;){
-    // Avoid deadlock by ensuring that devices can interrupt.
-    intr_on();
 
-    for(p = proc; p < &proc[NPROC]; p++) {
-      struct trapframe trfr;
-      struct context ctx;
-
-      acquire(&p->lock);
-      if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        trfr = *(p->trapframe);
-        ctx = c->context;
-        if (log_swtch) {
-          pr_msg(
-            "switched to process number %d with name %s, trapframe is:\n"
-            "kernel_satp: %p\n"
-            "kernel_sp: %p\n"
-            "kernel_trap: %p\n"
-            "epc: %p\n"
-            "kernel_hartid: %p\n"
-            "ra: %p\n"
-            "sp: %p\n"
-            "gp: %p\n"
-            "tp: %p\n"
-            "t0: %p\n"
-            "t1: %p\n"
-            "t2: %p\n"
-            "s0: %p\n"
-            "s1: %p\n"
-            "a0: %p\n"
-            "a1: %p\n"
-            "a2: %p\n"
-            "a3: %p\n"
-            "a4: %p\n"
-            "a5: %p\n"
-            "a6: %p\n"
-            "a7: %p\n"
-            "s2: %p\n"
-            "s3: %p\n"
-            "s4: %p\n"
-            "s5: %p\n"
-            "s6: %p\n"
-            "s7: %p\n"
-            "s8: %p\n"
-            "s9: %p\n"
-            "s10: %p\n"
-            "s11: %p\n"
-            "t3: %p\n"
-            "t4: %p\n"
-            "t5: %p\n"
-            "t6: %p\n"
-            "core context is:\n"
-            "ra: %p\n"
-            "rp: %p\n"
-            "s0: %p\n"
-            "s1: %p\n"
-            "s2: %p\n"
-            "s3: %p\n"
-            "s4: %p\n"
-            "s5: %p\n"
-            "s6: %p\n"
-            "s7: %p\n"
-            "s8: %p\n"
-            "s9: %p\n"
-            "s10: %p\n"
-            "s11: %p"
-            ,
-            p->pid, p->name,
-            trfr.kernel_satp,
-            trfr.kernel_sp,
-            trfr.kernel_trap,
-            trfr.epc,
-            trfr.kernel_hartid,
-            trfr.ra,
-            trfr.sp,
-            trfr.gp,
-            trfr.tp,
-            trfr.t0,
-            trfr.t1,
-            trfr.t2,
-            trfr.s0,
-            trfr.s1,
-            trfr.a0,
-            trfr.a1,
-            trfr.a2,
-            trfr.a3,
-            trfr.a4,
-            trfr.a5,
-            trfr.a6,
-            trfr.a7,
-            trfr.s2,
-            trfr.s3,
-            trfr.s4,
-            trfr.s5,
-            trfr.s6,
-            trfr.s7,
-            trfr.s8,
-            trfr.s9,
-            trfr.s10,
-            trfr.s11,
-            trfr.t3,
-            trfr.t4,
-            trfr.t5,
-            trfr.t6,
-            ctx.s0,
-            ctx.s1,
-            ctx.s2,
-            ctx.s3,
-            ctx.s4,
-            ctx.s5,
-            ctx.s6,
-            ctx.s7,
-            ctx.s8,
-            ctx.s9,
-            ctx.s10,
-            ctx.s11
-          );
-        }
-        swtch(&c->context, &p->context);
-
-
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
-      release(&p->lock);
-      
-    }
-  }
-}
-
-// Switch to scheduler.  Must hold only p->lock
-// and have changed proc->state. Saves and restores
-// intena because intena is a property of this
-// kernel thread, not this CPU. It should
-// be proc->intena and proc->noff, but that would
-// break in the few places where a lock is held but
-// there's no process.
-void
-sched(void)
-{
-  int intena;
-  struct proc *p = myproc();
-
-  if(!holding(&p->lock))
-    panic("sched p->lock");
-  if(mycpu()->noff != 1)
-    panic("sched locks");
-  if(p->state == RUNNING)
-    panic("sched running");
-  if(intr_get())
-    panic("sched interruptible");
-
-  intena = mycpu()->intena;
-
-  struct trapframe trfr = *(p->trapframe);
-  struct context ctx = mycpu()->context;
-
+void add_log_swtch(struct trapframe trfr, struct context ctx, int pid, char* name) {
   if (log_swtch) {
     pr_msg(
       "switched to process number %d with name %s, trapframe is:\n"
@@ -679,7 +503,7 @@ sched(void)
       "s10: %p\n"
       "s11: %p"
       ,
-      p->pid, p->name,
+      pid, name,
       trfr.kernel_satp,
       trfr.kernel_sp,
       trfr.kernel_trap,
@@ -730,6 +554,84 @@ sched(void)
       ctx.s11
     );
   }
+}
+
+// Per-CPU process scheduler.
+// Each CPU calls scheduler() after setting itself up.
+// Scheduler never returns.  It loops, doing:
+//  - choose a process to run.
+//  - swtch to start running that process.
+//  - eventually that process transfers control
+//    via swtch back to the scheduler.
+void
+scheduler(void)
+{
+  struct proc *p;
+  struct cpu *c = mycpu();
+  
+  c->proc = 0;
+  for(;;){
+    // Avoid deadlock by ensuring that devices can interrupt.
+    intr_on();
+
+    for(p = proc; p < &proc[NPROC]; p++) {
+      struct trapframe trfr;
+      struct context ctx;
+
+      acquire(&p->lock);
+      if(p->state == RUNNABLE) {
+        // Switch to chosen process.  It is the process's job
+        // to release its lock and then reacquire it
+        // before jumping back to us.
+        
+        add_log_swtch(trfr, ctx, p->pid, p->name);
+
+        p->state = RUNNING;
+        c->proc = p;
+        trfr = *(p->trapframe);
+        ctx = c->context;
+
+        swtch(&c->context, &p->context);
+
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      release(&p->lock);
+      
+    }
+  }
+}
+
+
+// Switch to scheduler.  Must hold only p->lock
+// and have changed proc->state. Saves and restores
+// intena because intena is a property of this
+// kernel thread, not this CPU. It should
+// be proc->intena and proc->noff, but that would
+// break in the few places where a lock is held but
+// there's no process.
+void
+sched(void)
+{
+  int intena;
+  struct proc *p = myproc();
+
+  if(!holding(&p->lock))
+    panic("sched p->lock");
+  if(mycpu()->noff != 1)
+    panic("sched locks");
+  if(p->state == RUNNING)
+    panic("sched running");
+  if(intr_get())
+    panic("sched interruptible");
+
+  intena = mycpu()->intena;
+
+  struct trapframe trfr = *(p->trapframe);
+  struct context ctx = mycpu()->context;
+
+  add_log_swtch(trfr, ctx, p->pid, p->name);
 
   swtch(&p->context, &mycpu()->context);
   mycpu()->intena = intena;
