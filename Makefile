@@ -133,7 +133,15 @@ UPROGS=\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
-  $U/_dmesg
+  $U/_dmesg\
+  $U/_start_syslog\
+  $U/_stop_syslog\
+  $U/_start_devintrlog\
+  $U/_stop_devintrlog\
+  $U/_start_execlog\
+  $U/_stop_execlog\
+  $U/_start_swtchlog\
+  $U/_stop_swtchlog\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

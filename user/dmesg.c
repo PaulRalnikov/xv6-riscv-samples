@@ -15,7 +15,11 @@ int main(int argc, const char* argv[]) {
 		exit(0);
 	}
 
-	printf(buf);
+	int sz = strlen(buf);
+	if (write(1, buf, sz) != sz) {
+		printf("error in write\n");
+		exit(-1);
+	}
 	free(buf);
 
 	exit(0);

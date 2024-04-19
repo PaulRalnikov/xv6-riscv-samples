@@ -19,6 +19,19 @@ int flags2perm(int flags)
     return perm;
 }
 
+int log_exec = 1;
+
+uint64 sys_start_execlog(void) {
+  log_exec = 1;
+  return 0;
+}
+
+uint64 sys_stop_execlog(void) {
+  log_exec = 0;
+  return 0;
+}
+
+
 int
 exec(char *path, char **argv)
 {
@@ -32,7 +45,15 @@ exec(char *path, char **argv)
   pagetable_t pagetable = 0, oldpagetable;
   struct proc *p = myproc();
 
-  pr_msg("called exec from proc %d; execute %s", p->pid, path);
+  if (log_exec) {
+    acquire(&p->lock);
+    int pid = p->pid;
+    release(&p->lock);
+    pr_msg(
+      "called exec from proc %d; execute %s",
+      pid, path
+    );
+  }
 
   begin_op();
 

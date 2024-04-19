@@ -69,9 +69,7 @@ void put_ptr_to_buf(uint64 x)
 }
 
 void pr_msg(const char* fmt, ...) {
-	acquire(&tickslock);
 	int t = ticks;
-	release(&tickslock);
 	va_list ap;
 
 	//TODO: fix if

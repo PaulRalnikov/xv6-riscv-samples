@@ -169,6 +169,18 @@ clockintr()
   release(&tickslock);
 }
 
+int log_devintr = 1;
+
+uint64 sys_start_devintrlog(void) {
+  log_devintr = 1;
+  return 0;
+}
+
+uint64 sys_stop_devintrlog(void) {
+  log_devintr = 0;
+  return 0;
+}
+
 // check if it's an external interrupt or software interrupt,
 // and handle it.
 // returns 2 if timer interrupt,
@@ -189,6 +201,11 @@ devintr()
     if(irq == UART0_IRQ){
       uartintr();
     } else if(irq == VIRTIO0_IRQ){
+      if (log_devintr) {
+        pr_msg(
+          "interrupt number %d caused by virtio",
+          irq);
+      }
       virtio_disk_intr();
     } else if(irq){
       printf("unexpected interrupt irq=%d\n", irq);
