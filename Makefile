@@ -142,6 +142,8 @@ UPROGS=\
   $U/_stop_execlog\
   $U/_start_swtchlog\
   $U/_stop_swtchlog\
+  $U/_test_util\
+  $U/_clearmsgbuf\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

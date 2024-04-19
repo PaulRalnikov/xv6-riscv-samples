@@ -120,6 +120,7 @@ extern uint64 sys_start_execlog(void);
 extern uint64 sys_stop_execlog(void);
 extern uint64 sys_start_swtchlog(void);
 extern uint64 sys_stop_swtchlog(void);
+extern uint64 sys_clearmsgbuf(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -153,7 +154,8 @@ static uint64 (*syscalls[])(void) = {
 [SYS_start_execlog]       sys_start_execlog,
 [SYS_stop_execlog]        sys_stop_execlog,
 [SYS_start_swtchlog]      sys_start_swtchlog,
-[SYS_stop_swtchlog]       sys_stop_swtchlog
+[SYS_stop_swtchlog]       sys_stop_swtchlog,
+[SYS_clearmsgbuf]         sys_clearmsgbuf
 };
 
 static const char* syscall_names[] = {
@@ -187,6 +189,7 @@ static const char* syscall_names[] = {
 [SYS_stop_execlog]       "stop_execlog",
 [SYS_start_swtchlog]     "start_swtchlog",
 [SYS_stop_swtchlog]      "stop_swtchlog",
+[SYS_clearmsgbuf]        "clearmsgbuf",
 };
 
 void
@@ -200,10 +203,12 @@ syscall(void)
     // Use num to lookup the system call function for num, call it,
     // and store its return value in p->trapframe->a0
     if (log_syscall) {
+      acquire(&p->lock);
       pr_msg(
         "proc number %d (named %s) calls %s",
         p->pid, p->name, syscall_names[num]
       );
+      release(&p->lock);
     }
     p->trapframe->a0 = syscalls[num]();
   } else {

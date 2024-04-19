@@ -31,6 +31,7 @@ int start_execlog(void);
 int stop_execlog(void);
 int start_swtchlog(void);
 int stop_swtchlog(void);
+int clearmsgbuf(void);
 
 // ulib.c
 int stat(const char*, struct stat*);

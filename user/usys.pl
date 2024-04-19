@@ -45,3 +45,4 @@ entry("start_execlog");
 entry("stop_execlog");
 entry("start_swtchlog");
 entry("stop_swtchlog");
+entry("clearmsgbuf");

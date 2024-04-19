@@ -29,3 +29,4 @@
 #define SYS_stop_execlog       28
 #define SYS_start_swtchlog     29
 #define SYS_stop_swtchlog      30
+#define SYS_clearmsgbuf        31

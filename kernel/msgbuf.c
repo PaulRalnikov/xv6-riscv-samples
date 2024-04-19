@@ -122,6 +122,15 @@ void pr_msg(const char* fmt, ...) {
 	release(&msg_buf_lock);
 }
 
+uint64 sys_clearmsgbuf(void) {
+	acquire(&msg_buf_lock);
+	buf_start = 0;
+	msg_buf[0] = '\n';
+	buf_end = 1;
+	release(&msg_buf_lock);
+	return 0;
+}
+
 uint64 sys_dmesg(void) {
 	uint64 addr_buf;
 	int sz;
