@@ -344,7 +344,7 @@ sys_open(void)
       return -1;
     }
 
-    if ((omode & O_NOFOLLOW) == 0 && ip->type == T_SYMLINK) {
+    if ((omode & O_NOFOLLOW) == 0) {
       int cntfollow = 0;
       while (cntfollow < MAXDEPTHSYMLINK && ip->type == T_SYMLINK) {
         if ((n = readi(ip, 0, (uint64)path, 0, MAXPATH)) < 0) {
