@@ -18,10 +18,15 @@ void create_go_dir(char* drname) {
   go_dir(drname);
 }
 
-void create_file(char* fname) {
-  int fd = open(fname, O_CREATE);
+void create_file(char* fname, char* content) {
+  int fd = open(fname, O_CREATE | O_WRONLY);
   if (fd < 0) {
     printf("Cant create file %s\n", fname);
+    exit(1);
+  }
+  int n = strlen(content);
+  if (write(fd, content, n) != n) {
+    printf("Cant write content to file %s\n", fname);
     exit(1);
   }
   if (close(fd) != 0) {
@@ -39,10 +44,10 @@ void create_link(char* lnkname, char* fname) {
 
 void build_and_return() {
   create_go_dir("dir");
-  create_file("f1");
+  create_file("f1", "File 1 content");
   create_go_dir("d1");
   create_go_dir("d2");
-  create_file("f2");
+  create_file("f2", "File 2 content");
   create_link("l2a", "/dir/d1/d2/f2");
   create_link("l2r", "f2");
   create_link("l1r", "../../f1");
@@ -61,7 +66,7 @@ void build_and_return() {
   create_link("l3r", "d3/d4/f3");
   create_go_dir("d3");
   create_go_dir("d4");
-  create_file("f3");
+  create_file("f3", "File 3 content");
 
   if (chdir("../../../../../") != 0) {
     printf("Cant return to root dir\n");
@@ -145,7 +150,59 @@ void ls_check_and_return() {
   check_incorrect_link("ir2");
   check_correct_link("l3r");
 
-  go_dir("../../");
+  go_dir("../../../");
+}
+
+void check_content_equal(char* fname1, char* fname2) {
+  const int N = 512;
+  int fd1, fd2;
+  char buf1[N], buf2[N];
+
+  if ((fd1 = open(fname1, O_RDONLY)) < 0) {
+    printf("Cant open file %s to read content\n", fname1);
+    exit(1);
+  }
+  if ((fd2 = open(fname2, O_RDONLY)) < 0) {
+    printf("Cant open file %s to read content\n", fname1);
+    close(fd1);
+    exit(1);
+  }
+
+  int n1 = read(fd1, buf1, N);
+  if (n1 < 0 || n1 == N) {
+    printf("Incorrect read from file %s\n", fname1);
+    close(fd1);
+    close(fd2);
+  }
+  buf1[n1] = 0;
+  close(fd1);
+
+  int n2 = read(fd2, buf2, N);
+  if (n2 < 0 || n2 == N) {
+    printf("Incorrect read from file %s\n", fname2);
+    close(fd2);
+  }
+  buf2[n2] = 0;
+  close(fd2);
+
+  if (strcmp(buf1, buf2) != 0) {
+    printf("Content of files %s and %s differes :(\n", fname1, fname2);
+    exit(1);
+  }
+  printf("Contents of files %s and %s are equal!\n", fname1, fname2);
+}
+
+void check_contents_and_return() {
+  go_dir("dir/d1/d2");
+  check_content_equal("l2a", "f2");
+  check_content_equal("l2r", "f2");
+  check_content_equal("l1r", "../../f1");
+  check_content_equal("lra", "f2");
+  check_content_equal("laa", "f2");
+  check_content_equal("lrr", "f2");
+  check_content_equal("lar", "f2");
+  check_content_equal("l3r", "d3/d4/f3");
+  go_dir("../../../");
 }
 
 //plan:
@@ -156,11 +213,11 @@ void ls_check_and_return() {
 //    |- f2
 //    |- l2a -> /dir/d1/d2/f2
 //    |- l2r -> f2
+//    |- l1r -> ../../f1
 //    |- lra -> l2a
 //    |- laa -> /dir/d1/d2/l2a
 //    |- lrr -> l2r
 //    |- lar -> /dir/d1/d2/l2r
-//    |- lsf -> lsf
 //    |- lsf -> lsf
 //    |- lp1 -> lp2
 //    |- lp2 -> lp3
@@ -181,6 +238,8 @@ main(int argc, char *argv[])
   build_and_return();
 
   ls_check_and_return();
+
+  check_contents_and_return();
 
   printf("Test finished successfully!\n");
 
