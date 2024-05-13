@@ -644,19 +644,18 @@ skipelem(char *path, char *name)
   return path;
 }
 
-// Look up and return the inode for a path name.
+// Goes by path starts from inode ip
 // If parent != 0, return the inode for the parent and copy the final
 // path element into name, which must have room for DIRSIZ bytes.
 // Must be called inside a transaction since it calls iput().
-static struct inode*
-namex(char *path, int nameiparent, char *name)
-{
-  struct inode *ip, *next;
-
+struct inode*
+namego(struct inode* ip, char* path, int nameiparent, char* name) {
   if(*path == '/')
     ip = iget(ROOTDEV, ROOTINO);
   else
-    ip = idup(myproc()->cwd);
+    ip = idup(ip);
+
+  struct inode* next;
 
   while((path = skipelem(path, name)) != 0){
     ilock(ip);
@@ -681,6 +680,21 @@ namex(char *path, int nameiparent, char *name)
     return 0;
   }
   return ip;
+}
+
+// Look up and return the inode for a path name.
+// If parent != 0, return the inode for the parent and copy the final
+// path element into name, which must have room for DIRSIZ bytes.
+// Must be called inside a transaction since it calls iput().
+static struct inode*
+namex(char *path, int nameiparent, char *name)
+{
+  struct inode *ip = 0;
+
+  if(*path != '/')
+    ip = myproc()->cwd;
+
+  return namego(ip, path, nameiparent, name);
 }
 
 struct inode*
