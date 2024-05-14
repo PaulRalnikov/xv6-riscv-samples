@@ -5,7 +5,6 @@
 #include "riscv.h"
 #include "defs.h"
 #include "fs.h"
-
 /*
  * the kernel's page table.
  */
@@ -436,4 +435,33 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+void pgprint(pagetable_t pagetable, int depth) {
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    if(pte & PTE_V){
+      // this PTE points to a lower-level page table.
+      uint64 child = PTE2PA(pte);
+      
+      for (int j = 0; j < depth + 1; j++)
+        printf(" ..");
+      int A = ((pte & PTE_A) != 0);
+      int D = ((pte & PTE_D) != 0);
+      int R = ((pte & PTE_R) != 0);
+      int W = ((pte & PTE_W) != 0);
+      int X = ((pte & PTE_X) != 0);
+
+      printf("%d pte %p; flags: A = %d, D = %d, R = %d, W = %d, X = %d\n",
+        i, child, A, D, R, W, X);
+
+      if (depth < 2)
+        pgprint((pagetable_t)child, depth + 1);
+    }
+  }
+}
+
+void vmprint(pagetable_t pagetable) {
+  printf("page table %p\n", pagetable);
+  pgprint(pagetable, 0);
 }
