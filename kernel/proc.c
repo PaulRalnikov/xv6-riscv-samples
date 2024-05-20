@@ -681,3 +681,39 @@ procdump(void)
     printf("\n");
   }
 }
+
+uint64 sys_proctable() {
+  struct proc *p = myproc();
+  vmprint(p->pagetable);
+  return 0;
+}
+
+//returns
+uint64 sys_wasaccess() {
+  uint64 va;
+  int sz;
+  uint64 res = 0; //count of accesses
+  pte_t* pte;
+
+  argaddr(0, &va);
+  argint(1, &sz);
+
+  if (sz <= 0)
+    return -1;
+  
+  pagetable_t pagetable = myproc()->pagetable;
+  for (int i = 0; i < sz; i += PGSIZE) {
+    pte = walk(pagetable, va + i, 0);
+    if (pte != 0 && ((*pte) & PTE_A)) {
+      ++res;
+      *pte ^= PTE_A;
+    }
+  }
+  pte = walk(pagetable, va + sz - 1, 0);
+  if (pte != 0 && ((*pte) & PTE_A)) {
+    ++res;
+    *pte ^= PTE_A;
+  }
+  return res;
+} 
+
