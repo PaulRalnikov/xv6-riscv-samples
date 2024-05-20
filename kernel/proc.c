@@ -702,7 +702,7 @@ uint64 sys_wasaccess() {
     return -1;
   
   pagetable_t pagetable = myproc()->pagetable;
-  for (int i = 0; i < sz; i += PGSHIFT) {
+  for (int i = 0; i < sz; i += PGSIZE) {
     pte = walk(pagetable, va + i, 0);
     if (pte != 0 && ((*pte) & PTE_A)) {
       ++res;
